@@ -1,5 +1,8 @@
-node_modules/
 watch/bin/
 *.prg
 *.der
 developer_key*
+android/.gradle/
+android/**/build/
+android/local.properties
+.idea/
