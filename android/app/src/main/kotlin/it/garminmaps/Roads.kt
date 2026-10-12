@@ -30,7 +30,7 @@ object Roads {
                 val el = els.getJSONObject(i)
                 val g = el.optJSONArray("geometry") ?: return@mapNotNull null
                 val pts = (0 until g.length()).map { k -> g.getJSONObject(k).let { it.getDouble("lat") to it.getDouble("lon") } }
-                if (pts.size < 2) null else Way(el.optJSONObject("tags")?.optString("highway") in MAJOR, pts)
+                if (pts.size < 2) null else Way(if (el.optJSONObject("tags")?.optString("highway") in MAJOR) Way.MAJOR else Way.MINOR, pts)
             }
         } finally { conn.disconnect() }
     }

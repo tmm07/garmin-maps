@@ -6,14 +6,20 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-/** Una strada: lat/lng dei punti. major = strada principale (disegnata piu' spessa). */
-data class Way(val major: Boolean, val pts: List<Pair<Double, Double>>)
+/** Una linea: lat/lng dei punti. kind: strada minore, strada principale (piu' spessa) o percorso. */
+data class Way(val kind: Int, val pts: List<Pair<Double, Double>>) {
+    companion object {
+        const val MINOR = 0
+        const val MAJOR = 1
+        const val ROUTE = 2
+    }
+}
 
 /**
  * Formato compatto per mandare le strade all'orologio (il collegamento Bluetooth fa ~128 B/s).
  * Coordinate in metri rispetto a un punto di riferimento (x = est, y = nord), a passi di 2 m,
  * 12 bit ciascuna = 2 caratteri ('?'..'~', cioe' codice-63 = 6 bit). Una strada = classe ('1'/'0')
- * + 4 caratteri per punto; le strade sono separate da ';'.
+ * + 4 caratteri per punto; le linee sono separate da ';'.
  */
 object MapEncoder {
     const val STEP_M = 2.0
@@ -46,6 +52,9 @@ object MapEncoder {
         return pts.filterIndexed { i, _ -> keep[i] }
     }
 
+    /** Distanza in metri del punto p dal segmento a-b (coordinate locali in metri). */
+    fun segmentDistance(p: Pair<Double, Double>, a: Pair<Double, Double>, b: Pair<Double, Double>): Double = segDist(p, a, b)
+
     private fun segDist(p: Pair<Double, Double>, a: Pair<Double, Double>, b: Pair<Double, Double>): Double {
         val dx = b.first - a.first
         val dy = b.second - a.second
@@ -71,21 +80,21 @@ object MapEncoder {
     }
 
     fun encode(ways: List<Way>, refLat: Double, refLng: Double, maxChars: Int = 1400): String {
-        class Item(val major: Boolean, val pts: List<Pair<Double, Double>>, val nearest: Double)
+        class Item(val kind: Int, val pts: List<Pair<Double, Double>>, val nearest: Double)
         val items = ways.flatMap { w ->
-            val local = simplify(w.pts.map { toLocal(it.first, it.second, refLat, refLng) }, 6.0)
-            clip(local).map { run -> Item(w.major, run, run.minOf { sqrt(it.first * it.first + it.second * it.second) }) }
-        }.sortedWith(compareBy({ !it.major }, { it.nearest }))
+            val local = simplify(w.pts.map { toLocal(it.first, it.second, refLat, refLng) }, if (w.kind == Way.ROUTE) 4.0 else 6.0)
+            clip(local).map { run -> Item(w.kind, run, run.minOf { sqrt(it.first * it.first + it.second * it.second) }) }
+        }.sortedWith(compareBy({ -it.kind }, { it.nearest }))
 
         val sb = StringBuilder()
         for (item in items) {
-            val s = StringBuilder().append(if (item.major) '1' else '0')
+            val s = StringBuilder().append('0' + item.kind)
             for ((x, y) in item.pts) {
                 val qx = quant(x)
                 val qy = quant(y)
                 s.append(ch(qx shr 6)).append(ch(qx and 63)).append(ch(qy shr 6)).append(ch(qy and 63))
             }
-            if (sb.length + s.length + 1 > maxChars) continue
+            if (item.kind != Way.ROUTE && sb.length + s.length + 1 > maxChars) continue   // il percorso c'e' sempre
             if (sb.isNotEmpty()) sb.append(';')
             sb.append(s)
         }
@@ -99,6 +108,6 @@ object MapEncoder {
             val y = ((c[2].code - 63) * 64 + (c[3].code - 63) - 2048) * STEP_M
             Pair(x, y)
         }
-        Way(part[0] == '1', pts)
+        Way(part[0] - '0', pts)
     }
 }
