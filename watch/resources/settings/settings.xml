@@ -1,0 +1,26 @@
+<resources>
+    <settings>
+        <setting propertyKey="@Properties.serverUrl" title="@Strings.ServerUrl">
+            <settingConfig type="alphaNumeric"/>
+        </setting>
+        <setting propertyKey="@Properties.token" title="@Strings.Token">
+            <settingConfig type="alphaNumeric"/>
+        </setting>
+        <setting propertyKey="@Properties.mode" title="@Strings.Mode">
+            <settingConfig type="list">
+                <listEntry value="0">@Strings.Walk</listEntry>
+                <listEntry value="1">@Strings.Drive</listEntry>
+                <listEntry value="2">@Strings.Bike</listEntry>
+            </settingConfig>
+        </setting>
+        <setting propertyKey="@Properties.fav1" title="@Strings.Fav1">
+            <settingConfig type="alphaNumeric"/>
+        </setting>
+        <setting propertyKey="@Properties.fav2" title="@Strings.Fav2">
+            <settingConfig type="alphaNumeric"/>
+        </setting>
+        <setting propertyKey="@Properties.fav3" title="@Strings.Fav3">
+            <settingConfig type="alphaNumeric"/>
+        </setting>
+    </settings>
+</resources>
